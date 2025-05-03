@@ -2,3 +2,5 @@
 
 To activate the conda environment associated with this repository, enter this command:
 conda activate rag-agent-musings
+
+You are using Google Gemini for your LLM, and Google VertexAI for your embeddings model.
