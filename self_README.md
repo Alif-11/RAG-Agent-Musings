@@ -6,3 +6,11 @@ conda activate rag-agent-musings
 You are using Google Gemini for your LLM, HuggingFace for your embeddings model, and an In Memory Vector Store for your vector store.
 
 [Using this link for this RAG agent](https://lilianweng.github.io/posts/2023-06-23-agent/)
+
+To use streamlit, run this command:
+python -m streamlit run <<desired_streamlit_app>>.py
+
+OR
+
+streamlit run <<desired_streamlit_app>>.py 
+(if this doesn't work, or throws a "ModuleNotFound: toml" error, be sure to deactivate your current environment several times and then activate the rag-agent-musings conda environment.)
