@@ -14,3 +14,5 @@ OR
 
 streamlit run <<desired_streamlit_app>>.py 
 (if this doesn't work, or throws a "ModuleNotFound: toml" error, be sure to deactivate your current environment several times and then activate the rag-agent-musings conda environment.)
+
+[A way to add support to handle reading in PDFs, so we can use our RAG agent on the PDF text.](https://medium.com/@dr.booma19/extracting-text-from-pdf-files-using-ocr-a-step-by-step-guide-with-python-code-becf221529ef)
