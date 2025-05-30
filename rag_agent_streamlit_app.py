@@ -9,6 +9,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain import hub
 from langchain_core.documents import Document
 from typing_extensions import List, TypedDict
+from PIL import Image
 
 class RAG_State(TypedDict):
   question: str
@@ -123,4 +124,6 @@ with website_tab:
       st.write(f"Answer: {rag_agent_response['answer']}")
 
 with pdf_tab:
-  st.info("PDF Section in progress!")
+  uploaded_pdf = st.file_uploader("Upload the desired text-containing PDF", type=["pdf"])
+
+
