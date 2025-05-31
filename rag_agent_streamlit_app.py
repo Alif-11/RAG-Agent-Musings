@@ -49,6 +49,14 @@ st.title("RAG Agent")
 langsmith_api_key = ""
 google_gemini_api_key = ""
 
+def submit_button_text(tab_type):
+  """
+  This function will handle the submit button functionality under either tab.
+  """
+  if tab_type == "website":
+    pass
+  elif tab_type == "pdf":
+    pass
 
 with st.sidebar:
   st.header("API Keys")
@@ -125,5 +133,55 @@ with website_tab:
 
 with pdf_tab:
   uploaded_pdf = st.file_uploader("Upload the desired text-containing PDF", type=["pdf"])
+  if st.button("Submit", key="pdf_submit"):
+    if langsmith_api_key == "" or google_gemini_api_key == "":
+      st.warning("Please enter both your LangSmit and Google Gemini Flash API Keys to use this app.")
+    elif website_to_scrape_link == "":
+      st.warning("Please enter a website to scrape to use this app.")
+    elif user_query == "":
+      st.warning("Please enter a query to use this app.")
+    else:
+      print("Initializing chat model!")
+      llm = init_chat_model("gemini-2.0-flash", model_provider="google_genai")
+      print("Chat model initialization over!")
+
+      print("Initializing embedder model!")
+      embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+      print("Embedder model initialized!")
+
+      print("Initialize vector store!")
+      vector_store = InMemoryVectorStore(embeddings)
+      print("Vector store initialized!")
+
+      bs4_filterer = bs4.SoupStrainer()
+      webpage_loader = WebBaseLoader(
+      web_paths=(website_to_scrape_link,),
+      bs_kwargs={"parse_only": bs4_filterer}
+      )
+
+      documents = webpage_loader.load()
+
+      recursive_text_splitter = RecursiveCharacterTextSplitter(
+      chunk_size=1000,
+      chunk_overlap=200,
+      add_start_index=True,
+      )
+
+
+      splitted_text = recursive_text_splitter.split_documents(documents)
+      vector_store.add_documents(splitted_text)
+
+      rag_prompt = hub.pull("rlm/rag-prompt")
+
+      from langgraph.graph import START, StateGraph # START is a special Start Node
+
+      rag_agent_maker = StateGraph(RAG_State).add_sequence([retrieve, generate])
+      rag_agent_maker.add_edge(START, "retrieve") # links the special Start node to the retrieve node sequence we defined above.
+      rag_agent = rag_agent_maker.compile() # now we have made our RAG agent.
+
+      rag_agent_response = rag_agent.invoke({"question": user_query})
+
+      st.write(f"Context: {rag_agent_response['context'][0].page_content}")
+      st.write(f"Answer: {rag_agent_response['answer']}")
 
 
