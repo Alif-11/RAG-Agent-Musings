@@ -78,6 +78,8 @@ def submit_button_text(tab_type):
   """
   This function will handle the submit button functionality under either tab.
   """
+  global langsmith_api_key, google_gemini_api_key
+  global global_llm, global_rag_prompt, global_vector_store
   user_query = st.text_input("Input Your Query Here", type="default", key=f"user query key: {tab_type}")
   if st.button("Submit", key=tab_type):
     if langsmith_api_key == "" or google_gemini_api_key == "":
@@ -87,23 +89,26 @@ def submit_button_text(tab_type):
     elif user_query == "":
       st.warning("Please enter a query to use this app.")
     else:
-      llm, embeddings, vector_store, rag_prompt = initialize_ai_models()
+      with st.spinner("Initializing AI Models..."):
+        llm, embeddings, vector_store, rag_prompt = initialize_ai_models()
       global_llm = llm
       global_vector_store = vector_store
       global_rag_prompt = rag_prompt
       if tab_type == "website":
-        bs4_filterer = bs4.SoupStrainer()
-        webpage_loader = WebBaseLoader(
-        web_paths=(website_to_scrape_link,),
-        bs_kwargs={"parse_only": bs4_filterer}
-        )
-
-        documents = webpage_loader.load()
-        recursive_text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        add_start_index=True,
-        )
+        with st.spinner("Initializing Website Loader..."):
+          bs4_filterer = bs4.SoupStrainer()
+          webpage_loader = WebBaseLoader(
+          web_paths=(website_to_scrape_link,),
+          bs_kwargs={"parse_only": bs4_filterer}
+          )
+        with st.spinner("Loading Website..."):
+          documents = webpage_loader.load()
+        with st.spinner("Splitting Text From Website..."):
+          recursive_text_splitter = RecursiveCharacterTextSplitter(
+          chunk_size=1000,
+          chunk_overlap=200,
+          add_start_index=True,
+          )
 
         splitted_text = recursive_text_splitter.split_documents(documents)
         vector_store.add_documents(splitted_text)
@@ -114,7 +119,8 @@ def submit_button_text(tab_type):
         rag_agent_maker.add_edge(START, "retrieve") # links the special Start node to the retrieve node sequence we defined above.
         rag_agent = rag_agent_maker.compile() # now we have made our RAG agent.
 
-        rag_agent_response = rag_agent.invoke({"question": user_query})
+        with st.spinner("Generating Response..."):
+          rag_agent_response = rag_agent.invoke({"question": user_query})
 
         st.write(f"Context: {rag_agent_response['context'][0].page_content}")
         st.write(f"Answer: {rag_agent_response['answer']}")
