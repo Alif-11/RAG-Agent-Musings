@@ -10,10 +10,12 @@ from langchain import hub
 from langchain_core.documents import Document
 from typing_extensions import List, TypedDict
 from PIL import Image
+import pdf2image
+import pytesseract
 
 
 global global_llm, global_rag_prompt, global_vector_store
-
+uploaded_pdf = None
 class RAG_State(TypedDict):
   question: str
   context: List[Document] # remember, context should be several chunks of a document
@@ -74,18 +76,20 @@ def initialize_ai_models():
     ai_models_initialized = True
   return llm, embeddings, vector_store, rag_prompt
 
-def submit_button_text(tab_type):
+def submit_button_text(tab_type, data_to_scrape):
   """
   This function will handle the submit button functionality under either tab.
   """
   global langsmith_api_key, google_gemini_api_key
   global global_llm, global_rag_prompt, global_vector_store
+  global website_to_scrape_link, uploaded_pdf
   user_query = st.text_input("Input Your Query Here", type="default", key=f"user query key: {tab_type}")
   if st.button("Submit", key=tab_type):
     if langsmith_api_key == "" or google_gemini_api_key == "":
       st.warning("Please enter both your LangSmit and Google Gemini Flash API Keys to use this app.")
-    elif website_to_scrape_link == "":
-      st.warning("Please enter a website to scrape to use this app.")
+    elif ((website_to_scrape_link == "") and (uploaded_pdf is None)) :
+      
+      st.warning("Please enter either a website to scrape or PDF to extract text from to use this app.")
     elif user_query == "":
       st.warning("Please enter a query to use this app.")
     else:
@@ -95,6 +99,7 @@ def submit_button_text(tab_type):
       global_vector_store = vector_store
       global_rag_prompt = rag_prompt
       if tab_type == "website":
+        website_to_scrape_link = data_to_scrape
         with st.spinner("Initializing Website Loader..."):
           bs4_filterer = bs4.SoupStrainer()
           webpage_loader = WebBaseLoader(
@@ -127,7 +132,12 @@ def submit_button_text(tab_type):
 
 
       elif tab_type == "pdf":
-        pass
+        uploaded_pdf = data_to_scrape
+        pdf_in_bytes = uploaded_pdf.read()
+        pdf_images = pdf2image.convert_from_bytes(pdf_in_bytes)
+        pdf_text = pytesseract.image_to_string(pdf_images[0], lang="eng")
+        print(pdf_text)
+        st.write(f"PDF TEXT: {pdf_text}")
 
 with st.sidebar:
   st.header("API Keys")
@@ -147,14 +157,15 @@ website_tab, pdf_tab = st.tabs(["Website To Scrape", "PDF To Scrape"])
 
 
 with website_tab:
+  global website_to_scrape_link
   website_to_scrape_link = st.text_input("Input The Website You Want The Agent To Scrape For Context", type="default")
 
 with website_tab:
-  submit_button_text("website")
+  submit_button_text("website", website_to_scrape_link)
 
 with pdf_tab:
   uploaded_pdf = st.file_uploader("Upload the desired text-containing PDF", type=["pdf"])
-  submit_button_text("pdf")
+  submit_button_text("pdf", uploaded_pdf)
 
 
 
