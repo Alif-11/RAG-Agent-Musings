@@ -136,8 +136,27 @@ def submit_button_text(tab_type, data_to_scrape):
         pdf_in_bytes = uploaded_pdf.read()
         pdf_images = pdf2image.convert_from_bytes(pdf_in_bytes)
         pdf_text = pytesseract.image_to_string(pdf_images[0], lang="eng")
-        print(pdf_text)
-        st.write(f"PDF TEXT: {pdf_text}")
+        with st.spinner("Splitting Text From PDF..."):
+          recursive_text_splitter = RecursiveCharacterTextSplitter(
+          chunk_size=1000,
+          chunk_overlap=200,
+          add_start_index=True,
+          )
+
+        splitted_text = recursive_text_splitter.split_text(pdf_text)
+        vector_store.add_texts(splitted_text)
+
+        from langgraph.graph import START, StateGraph # START is a special Start Node
+
+        rag_agent_maker = StateGraph(RAG_State).add_sequence([retrieve, generate])
+        rag_agent_maker.add_edge(START, "retrieve") # links the special Start node to the retrieve node sequence we defined above.
+        rag_agent = rag_agent_maker.compile() # now we have made our RAG agent.
+
+      with st.spinner("Generating Response..."):
+        rag_agent_response = rag_agent.invoke({"question": user_query})
+
+      st.write(f"Context: {rag_agent_response['context'][0].page_content}")
+      st.write(f"Answer: {rag_agent_response['answer']}")
 
 with st.sidebar:
   st.header("API Keys")
