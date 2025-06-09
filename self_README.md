@@ -1,6 +1,8 @@
 [Extending the below chat tutorial by adding memory to your chat bot](https://python.langchain.com/docs/tutorials/qa_chat_history/)
 ---
-[The tutorial you are following to learn RAG](https://python.langchain.com/docs/tutorials/rag/)
+
+On the "This model for state is so versatile..." section for the code.
+
 
 To activate the conda environment associated with this repository, enter this command:
 conda activate rag-agent-musings
